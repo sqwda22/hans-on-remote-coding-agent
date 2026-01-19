@@ -24,6 +24,11 @@ jobs:
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
 
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
       - name: Run Claude Fix
         env:
           ANTHROPIC_BASE_URL: https://api.z.ai/api/anthropic
@@ -32,9 +37,24 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # 이슈 정보 추출
           ISSUE_NUMBER=${{ github.event.issue.number }}
           ISSUE_TITLE="${{ github.event.issue.title }}"
           
-          # 에이전트 실행 (이슈 번호와 제목을 컨텍스트로 주입)
-          claude -p "이슈 #${ISSUE_NUMBER} (${ISSUE_TITLE})를 해결하기 위한 원인 분석과 수정을 진행하고, 브랜치를 생성하여 Pull Request를 올려줘."
+          echo "### 🤖 Claude Fix 작업 시작" > claude_output.txt
+          claude -p "이슈 #${ISSUE_NUMBER} (${ISSUE_TITLE})를 해결하기 위한 원인 분석과 수정을 진행하고, 결과를 보고해줘. 가능하다면 브랜치를 생성하고 커밋까지 완료해줘." >> claude_output.txt 2>&1
+
+      - name: Post Result to Issue
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 로그 파일 요약 (너무 길면 잘림 방지)
+          LOG_CONTENT=$(head -c 5000 claude_output.txt)
+          echo "#### 📋 Claude 실행 결과" > comment_body.txt
+          echo '```' >> comment_body.txt
+          echo "$LOG_CONTENT" >> comment_body.txt
+          echo '```' >> comment_body.txt
+          echo "" >> comment_body.txt
+          echo "상세 로그: [GitHub Actions Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> comment_body.txt
+          
+          gh issue comment ${{ github.event.issue.number }} --body-file comment_body.txt
