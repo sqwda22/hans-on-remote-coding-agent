@@ -35,4 +35,4 @@ jobs:
           ISSUE_TITLE="${{ github.event.issue.title }}"
           
           # 에이전트 실행 (이슈 번호와 제목을 컨텍스트로 주입)
-          claude --execute "이슈 #${ISSUE_NUMBER} (${ISSUE_TITLE})를 해결하기 위한 원인 분석과 수정을 진행하고, 브랜치를 생성하여 Pull Request를 올려줘."
+          claude -p "이슈 #${ISSUE_NUMBER} (${ISSUE_TITLE})를 해결하기 위한 원인 분석과 수정을 진행하고, 브랜치를 생성하여 Pull Request를 올려줘."
