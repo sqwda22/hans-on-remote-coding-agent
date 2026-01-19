@@ -1,0 +1,37 @@
+name: Claude Fix
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  claude-fix:
+    if: contains(github.event.comment.body, '@claud-fix')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run Claude Fix
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 이슈 정보 추출
+          ISSUE_NUMBER=${{ github.event.issue.number }}
+          ISSUE_TITLE="${{ github.event.issue.title }}"
+          
+          # 에이전트 실행 (이슈 번호와 제목을 컨텍스트로 주입)
+          claude --execute "이슈 #${ISSUE_NUMBER} (${ISSUE_TITLE})를 해결하기 위한 원인 분석과 수정을 진행하고, 브랜치를 생성하여 Pull Request를 올려줘."
